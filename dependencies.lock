@@ -1,0 +1,36 @@
+dependencies:
+  Molorius/esp32-websocket:
+    component_hash: 6d276b23f85c21bbfe2630a951b063d6c2fa56c9209e254160e7b5c2034c5963
+    dependencies: []
+    source:
+      git: https://github.com/Molorius/esp32-websocket
+      path: .
+      type: git
+    version: b1bc497961fde04a863c17ac38f053b3fb100ffe
+  espressif/mdns:
+    component_hash: 26d0b8b207c7d8382cb3c103a9add9c75ca4dc0ef172b03a98af2c2254b2792b
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.6.0
+  idf:
+    source:
+      type: idf
+    version: 5.4.0
+  sd_card:
+    dependencies: []
+    source:
+      path: D:\Desktop\esp32_workspace\v5.4\esp-idf\examples\storage\sd_card\sdmmc\components\sd_card
+      type: local
+    version: '*'
+direct_dependencies:
+- Molorius/esp32-websocket
+- espressif/mdns
+- sd_card
+manifest_hash: 50c087978ab329c7f424e3a1d6c99b2a2e87fc672898923a484efa42bfe2549d
+target: esp32s3
+version: 2.0.0
