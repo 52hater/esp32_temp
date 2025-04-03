@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include <sdkconfig.h>
 
-#include <ble.h>
+#include "sdkconfig.h"
+#include "ble.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"

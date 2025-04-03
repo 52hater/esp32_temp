@@ -7,14 +7,18 @@ static sdmmc_card_t *card      = NULL;
 void sdcard_init(void)
 {
     esp_err_t ret;
+    const int retry_count = 5;
+    int retry = 0;
+    
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files              = 5,
-        .allocation_unit_size   = 16 * 1024};
+        .allocation_unit_size   = 16 * 1024
+    };
 
-    ESP_LOGI(TAG, "Initializing SD card");
+    ESP_LOGI(TAG, "SD 카드 초기화 중");
 
-    sdmmc_host_t host        = SDSPI_HOST_DEFAULT();
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 
     spi_bus_config_t bus_cfg = {
         .mosi_io_num     = PIN_NUM_MOSI,
@@ -28,7 +32,7 @@ void sdcard_init(void)
     ret = spi_bus_initialize(host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
     if (ret != ESP_OK)
     {
-        ESP_LOGE(TAG, "Failed to initialize bus.");
+        ESP_LOGE(TAG, "버스 초기화 실패: %s", esp_err_to_name(ret));
         return;
     }
 
@@ -36,34 +40,41 @@ void sdcard_init(void)
     slot_config.gpio_cs               = PIN_NUM_CS;
     slot_config.host_id               = host.slot;
 
-    ESP_LOGI(TAG, "Mounting filesystem");
+    ESP_LOGI(TAG, "파일 시스템 마운트 중");
 
-    ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config,
-                                  &mount_config, &card);
+    while (retry < retry_count) {
+        ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config,
+                                      &mount_config, &card);
+        
+        if (ret == ESP_OK) {
+            break; // 성공시 반복 종료
+        }
+        
+        ESP_LOGW(TAG, "SD 카드 마운트 실패 (시도 %d/%d): %s", 
+            retry+1, retry_count, esp_err_to_name(ret));
+        
+        retry++;
+        if (retry < retry_count) {
+            vTaskDelay(pdMS_TO_TICKS(500)); // 0.5초 대기 후 재시도
+        }
+    }
 
     if (ret != ESP_OK)
     {
         if (ret == ESP_FAIL)
         {
-            ESP_LOGE(
-                TAG,
-                "Failed to mount filesystem. "
-                "If you want the card to be formatted, set the "
-                "CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+            ESP_LOGE(TAG, "파일 시스템 마운트 실패");
         }
         else
         {
-            ESP_LOGE(TAG,
-                     "Failed to initialize the card (%s). "
-                     "Make sure SD card lines have pull-up resistors in place.",
-                     esp_err_to_name(ret));
+            ESP_LOGE(TAG, "SD 카드 초기화 실패 (%s)",
+                esp_err_to_name(ret));
         }
         return;
     }
-    ESP_LOGI(TAG, "Filesystem mounted");
-
+    
+    ESP_LOGI(TAG, "파일 시스템 마운트 완료");
     sdmmc_card_print_info(stdout, card);
-
 }
 
 const char* get_mount_point(void)

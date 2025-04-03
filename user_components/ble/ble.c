@@ -221,25 +221,27 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event,
 esp_err_t ble_prov_init(void)
 {
     esp_err_t ret;
+    const int retry_count = 5;
+    int retry = 0;
 
     ble_event_group = xEventGroupCreate();
 
     // Release classic BT memory
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
-    // Initialize controller
+    // 컨트롤러 초기화, 재시도 로직 추가
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret                               = esp_bt_controller_init(&bt_cfg);
-    if (ret)
-    {
-        ESP_LOGE(TAG, "initialize controller failed: %s", esp_err_to_name(ret));
-        return ret;
+    
+    while ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK && retry < retry_count) {
+        ESP_LOGW(TAG, "Initialize controller failed (attempt %d/%d): %s", 
+            retry+1, retry_count, esp_err_to_name(ret));
+        vTaskDelay(pdMS_TO_TICKS(500)); // 0.5초 대기 후 재시도
+        retry++;
     }
-
-    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    if (ret)
-    {
-        ESP_LOGE(TAG, "enable controller failed: %s", esp_err_to_name(ret));
+    
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Initialize controller failed after %d attempts: %s", 
+            retry_count, esp_err_to_name(ret));
         return ret;
     }
 
@@ -337,6 +339,7 @@ esp_err_t ble_prov_start(void)
     return ESP_OK;
 }
 
+// 이벤트 그룹을 사용하여 WiFi 자격 증명 수신을 대기
 esp_err_t ble_prov_get_credentials(wifi_credentials_t *credentials)
 {
     xEventGroupWaitBits(ble_event_group, WIFI_CREDS_RECEIVED_BIT, pdTRUE,

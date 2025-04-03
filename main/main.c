@@ -7,7 +7,7 @@ void app_main(void){
     // sntp_rtc는 ap_main에 넣어두고 웹소켓메인 다음줄에 실행되도록 해놓음.
 
     hw_init();
-    ap_init();
+    app_init();
 
-    ap_main();
+    app_main();
 }
